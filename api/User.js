@@ -52,7 +52,7 @@ router.post('/signup', (req, res) => {
 			status: 'failed',
 			message: 'invalid name',
 		})
-	} else if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
+	} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
 		res.json({
 			status: 'failed',
 			message: 'invalid email',
@@ -112,43 +112,6 @@ router.post('/signup', (req, res) => {
 			})
 	}
 })
-
-const sendOTPVerificationEmail = async ({ _id, email }, res) => {
-	try {
-		const otp = `${Math.floor(1000 + Math.random() * 9000)}`
-
-		const mailOptions = {
-			from: process.env.AUTH_EMAIL,
-			to: email,
-			subject: 'verify email',
-			html: `<p>Enter ${otp}</P>`,
-		}
-
-		const salt = 10
-		const hashedOTP = await bcrypt.hash(otp, salt)
-		const newOTPVerification = await new UserOTPVerification({
-			userId: _id,
-			otp: hashedOTP,
-			createdAt: Date.now(),
-			expireAt: Date.now() + 360000,
-		})
-		await newOTPVerification.save()
-		await transporter.sendMail(mailOptions)
-		res.json({
-			status: 'pending',
-			message: 'otp sent to the email',
-			data: {
-				userId: _id,
-				email,
-			},
-		})
-	} catch (err) {
-		res.json({
-			ststus: 'failed',
-			message: err.message,
-		})
-	}
-}
 
 // verify otp email
 router.post('/verifyOTP', async (req, res) => {
