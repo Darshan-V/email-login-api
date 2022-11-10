@@ -35,6 +35,7 @@ transporter.verify((error, success) => {
 
 const url = 'http://localhost:5000'
 
+//signup with email
 router.post('/signup', (req, res) => {
 	let { name, email, password } = req.body
 	name = name.trim()
@@ -148,3 +149,63 @@ const sendOTPVerificationEmail = async ({ _id, email }, res) => {
 		})
 	}
 }
+
+// verify otp email
+router.post('/verifyOTP', async (req, res) => {
+	try {
+		let { userId, otp } = req.body
+		if (!userId || !otp) {
+			throw Error('Empty otp')
+		} else {
+			const userOTPVerificationRecord = await UserOTPVerification.find({
+				userId,
+			})
+			if (userOTPVerificationRecord.length <= 0) {
+				throw new Error('account not exist or verified, login or signup')
+			} else {
+				const { expireAt } = userOTPVerificationRecord[0]
+				const hashedOTP = userOTPVerificationRecord[0].otp
+
+				if (expireAt < Date.now()) {
+					UserOTPVerification.deleteMany({ userId })
+					throw new Error('code as expired')
+				} else {
+					const validOTP = await bcrypt.compare(otp, hashedOTP)
+					if (!validOTP) {
+						throw new Error('wrong otp')
+					} else {
+						await User.updateOne({ _id: userId }, { verified: true })
+						await User.deleteMany({ userId })
+						res.json({
+							status: 'verified',
+							message: 'user email verified',
+						})
+					}
+				}
+			}
+		}
+	} catch (err) {
+		res.json({
+			status: 'failed',
+			message: err.message,
+		})
+	}
+})
+
+//resend otp verification
+router.post('/resendOTPVerification', async (req, res) => {
+	try {
+		let { userId, email } = req.body
+		if (!userId || !email) {
+			throw Error('empty details not allowed')
+		} else {
+			await UserOTPVerification.deleteMany({ userId })
+			sendOTPVerificationEmail({ _id: userId, email }, res)
+		}
+	} catch (err) {
+		res.json({
+			status: 'failed',
+			message: err.message,
+		})
+	}
+})
