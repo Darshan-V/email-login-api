@@ -1,9 +1,11 @@
 import User from './model.js'
 import hashData from '../../util/hashData.js'
 
-const createNewUser = async (data) => {
-	const { name, email, password } = data
+export const createNewUser = async (data) => {
 	try {
+		const name = String(data.name)
+		const email = String(data.email)
+		const password = String(data.password)
 		const existingUser = await User.find({ email })
 		if (existingUser.length) {
 			throw Error('user with email exist')

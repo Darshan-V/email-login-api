@@ -1,9 +1,8 @@
 import bcrypt from 'bcrypt'
 
-const hashData = async (data, salt) => {
+const hashData = async (data) => {
 	try {
-		salt = 10
-		const hashedData = await bcrypt.hash(data, salt)
+		const hashedData = await bcrypt.hash(data, 10)
 		return hashedData
 	} catch (error) {
 		throw error
